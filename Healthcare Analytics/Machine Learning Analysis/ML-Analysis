@@ -1,0 +1,255 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "c079f05b",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/Users/manikshakya/anaconda3/envs/hgp/lib/python3.10/site-packages/scipy/__init__.py:146: UserWarning: A NumPy version >=1.17.3 and <1.25.0 is required for this version of SciPy (detected version 1.25.0\n",
+      "  warnings.warn(f\"A NumPy version >={np_minversion} and <{np_maxversion}\"\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.ensemble import RandomForestClassifier\n",
+    "from sklearn.neural_network import MLPClassifier\n",
+    "from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "14223b05",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Read the dataset\n",
+    "df_train = pd.read_csv('mimic_train.csv')\n",
+    "df_test = pd.read_csv('mimic_test.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "833cad77",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for Null values and remove the unnecessary rows from training and test dataset\n",
+    "df_train.drop(['SUBJECT_ID', 'HADM_ID', 'ADMITTIME', 'DISCHTIME', 'DAYS_NEXT_ADMIT', 'NEXT_ADMITTIME',\n",
+    "               'ADMISSION_TYPE', 'DEATHTIME', 'DISCHARGE_LOCATION', 'INSURANCE', 'MARITAL_STATUS', 'ETHNICITY',\n",
+    "               'DIAGNOSIS', 'GENDER', 'DOB'], axis=1, inplace=True)\n",
+    "df_test.drop(['SUBJECT_ID', 'HADM_ID', 'ADMITTIME', 'DISCHTIME', 'DAYS_NEXT_ADMIT', 'NEXT_ADMITTIME',\n",
+    "              'ADMISSION_TYPE', 'DEATHTIME', 'DISCHARGE_LOCATION', 'INSURANCE', 'MARITAL_STATUS', 'ETHNICITY',\n",
+    "              'DIAGNOSIS', 'GENDER', 'DOB'], axis=1, inplace=True)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "2d7602d3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Transform non-numerical features into categorical type\n",
+    "categorical_cols = ['blood', 'circulatory', 'congenital', 'digestive', 'endocrine', 'genitourinary',\n",
+    "                    'infectious', 'injury', 'mental', 'misc', 'muscular', 'neoplasms', 'nervous',\n",
+    "                    'pregnancy', 'prenatal', 'respiratory', 'skin']\n",
+    "\n",
+    "df_train[categorical_cols] = df_train[categorical_cols].astype('category')\n",
+    "df_test[categorical_cols] = df_test[categorical_cols].astype('category')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "fd864e5b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Select only important features for training and testing purpose\n",
+    "selected_features = ['blood', 'circulatory', 'congenital', 'digestive', 'endocrine', 'genitourinary',\n",
+    "                     'infectious', 'injury', 'mental', 'misc', 'muscular', 'neoplasms', 'nervous',\n",
+    "                     'pregnancy', 'prenatal', 'respiratory', 'skin']\n",
+    "\n",
+    "X_train = df_train[selected_features]\n",
+    "y_train = df_train['OUTPUT_LABEL']\n",
+    "\n",
+    "X_test = df_test[selected_features]\n",
+    "y_test = df_test['OUTPUT_LABEL']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "2862663b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Re-scale the data using StandardScaler\n",
+    "scaler = StandardScaler()\n",
+    "X_train_scaled = scaler.fit_transform(X_train)\n",
+    "X_test_scaled = scaler.transform(X_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "ae98e496",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Train-test split\n",
+    "X_train_scaled, X_val_scaled, y_train, y_val = train_test_split(X_train_scaled, y_train, test_size=0.2, random_state=42)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "4e20934a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Train the models\n",
+    "models = [\n",
+    "    LogisticRegression(),\n",
+    "    RandomForestClassifier(),\n",
+    "    MLPClassifier()\n",
+    "]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "f1a11729",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Model: LogisticRegression\n",
+      "Confusion Matrix:\n",
+      "[[142  46]\n",
+      " [ 95 117]]\n",
+      "Classification Report:\n",
+      "              precision    recall  f1-score   support\n",
+      "\n",
+      "           0       0.60      0.76      0.67       188\n",
+      "           1       0.72      0.55      0.62       212\n",
+      "\n",
+      "    accuracy                           0.65       400\n",
+      "   macro avg       0.66      0.65      0.65       400\n",
+      "weighted avg       0.66      0.65      0.64       400\n",
+      "\n",
+      "AUC Score: 0.7249849458048976\n",
+      "--------------------------------------------------\n",
+      "Model: RandomForestClassifier\n",
+      "Confusion Matrix:\n",
+      "[[121  67]\n",
+      " [ 65 147]]\n",
+      "Classification Report:\n",
+      "              precision    recall  f1-score   support\n",
+      "\n",
+      "           0       0.65      0.64      0.65       188\n",
+      "           1       0.69      0.69      0.69       212\n",
+      "\n",
+      "    accuracy                           0.67       400\n",
+      "   macro avg       0.67      0.67      0.67       400\n",
+      "weighted avg       0.67      0.67      0.67       400\n",
+      "\n",
+      "AUC Score: 0.7333651144118828\n",
+      "--------------------------------------------------\n",
+      "Model: MLPClassifier\n",
+      "Confusion Matrix:\n",
+      "[[120  68]\n",
+      " [ 85 127]]\n",
+      "Classification Report:\n",
+      "              precision    recall  f1-score   support\n",
+      "\n",
+      "           0       0.59      0.64      0.61       188\n",
+      "           1       0.65      0.60      0.62       212\n",
+      "\n",
+      "    accuracy                           0.62       400\n",
+      "   macro avg       0.62      0.62      0.62       400\n",
+      "weighted avg       0.62      0.62      0.62       400\n",
+      "\n",
+      "AUC Score: 0.6680048173424327\n",
+      "--------------------------------------------------\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/Users/manikshakya/anaconda3/envs/hgp/lib/python3.10/site-packages/sklearn/neural_network/_multilayer_perceptron.py:692: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (200) reached and the optimization hasn't converged yet.\n",
+      "  warnings.warn(\n"
+     ]
+    }
+   ],
+   "source": [
+    "for model in models:\n",
+    "    model.fit(X_train_scaled, y_train)\n",
+    "    y_pred = model.predict(X_val_scaled)\n",
+    "    y_pred_prob = model.predict_proba(X_val_scaled)[:, 1]\n",
+    "    \n",
+    "    # Evaluate the model\n",
+    "    print(f\"Model: {type(model).__name__}\")\n",
+    "    print(\"Confusion Matrix:\")\n",
+    "    print(confusion_matrix(y_val, y_pred))\n",
+    "    print(\"Classification Report:\")\n",
+    "    print(classification_report(y_val, y_pred))\n",
+    "    print(\"AUC Score:\", roc_auc_score(y_val, y_pred_prob))\n",
+    "    print(\"--------------------------------------------------\")\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c25b1adc",
+   "metadata": {},
+   "source": [
+    "# Compare the results and describe which classifier is performing better and why?\n",
+    "\n",
+    "Based on the evaluation metrics, RandomForestClassifier outperforms the other classifiers in terms of accuracy, precision, recall, and F1-score. It achieves the highest accuracy of 0.67, indicating that it predicts the output label correctly for approximately 67% of the instances."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "63122d86",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
